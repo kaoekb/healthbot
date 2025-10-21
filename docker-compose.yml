@@ -1,0 +1,12 @@
+services:
+  healthbot:
+    build: .
+    container_name: healthbot
+    env_file:
+      - .env
+    environment:
+      - TZ=${TZ:-Europe/Moscow}
+      - DB_PATH=/app/data/healthbot.sqlite3
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
