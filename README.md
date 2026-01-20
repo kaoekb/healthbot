@@ -1,26 +1,47 @@
-# Telegram Health Tracker Bot
+# HealthBot (rewrite)
 
-Бот для учёта сахара и артериального давления c напоминаниями, подтверждением ввода и генерацией PDF-отчётов (неделя/месяц/всё время). Основан на **aiogram v3**, хранение — **SQLite (aiosqlite)**, графики — **matplotlib**.
+Telegram bot for tracking **blood glucose** and **blood pressure** with:
+- explicit choice what to enter (no auto-picking)
+- forgiving input parsing (spaces / `/` / `:` / `.` / `-` etc.)
+- per-user timezone, reminders by local time
+- SQLite (aiosqlite), aiogram v3
+- readable PDF reports with clean charts (7 days / 30 days / all time)
 
-## Возможности
-- /start → меню: «Изменить измеряемые», «Ввести данные», «Получить выписку», «Отключить уведомления», «Выбрать часовой пояс»
-- Выбор метрик: сахар, давление или оба; опция «измерять одновременно»
-- Выбор времени из предустановленных слотов: 08:00, 10:00, 12:00, 14:00, 17:00, 19:00, 21:00 (мультивыбор)
-- Персональный часовой пояс пользователя (по умолчанию — Санкт‑Петербург/Москва). Напоминания приходят по **локальному** времени пользователя.
-- Напоминания с инлайн‑кнопкой «Ввести данные»
-- Ввод с валидацией и подтверждением: сахар (число), давление (три числа «САД ДАД Пульс»)
-- Выписка: средние за 7 дней + PDF с графиками за 7/30 дней и всё время
-- Докер: один контейнер, volume для БД и отчётов
+## Quick start (Docker)
 
-## Запуск
+1) Create `.env`:
 ```bash
-cp .env.example .env  # впишите BOT_TOKEN
+BOT_TOKEN=123456:ABCDEF...
+DATA_DIR=/data
+DEFAULT_TIMEZONE=Europe/Moscow
+LOG_LEVEL=INFO
+```
+
+2) Run:
+```bash
 docker compose up -d --build
 ```
 
-## Таймзона
-- По умолчанию — `Europe/Moscow`. В меню добавлена кнопка **«Выбрать часовой пояс»**. Диалог показывает текущее время в СПб и у пользователя и предлагает быстрый выбор: Калининград (−1), Самара (+1), Екатеринбург (+2), Омск (+3), Новосибирск (+4), Красноярск (+4), Иркутск (+5), Якутск (+6), Владивосток (+7), Магадан (+8), Камчатка (+9).
+DB and generated reports live in the mounted volume (`./data` by default in compose).
 
-## Примечания
-- Планировщик учитывает часовой пояс каждого пользователя и отправляет одно напоминание на слот «дата+время» в локальном календаре пользователя.
-- Метки времени измерений сохраняются в БД в **UTC** (ISO, `+00:00`) для корректной аналитики.
+## Commands
+- `/start` – main menu
+- `/help` – short help
+
+## Input examples
+
+### Glucose
+- `5.6`
+- `5,6`
+- `sugar 5.6`
+
+### Blood pressure
+- `120 80 60`
+- `120/80/60`
+- `120:80`
+- `120-80-60`
+(Pulse is optional.)
+
+## Notes
+- All timestamps are stored in **UTC**.
+- Heavy work (charts/PDF) is executed via `asyncio.to_thread()` so the bot stays responsive.
